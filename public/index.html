@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1f17" />
+    <title>Controle de Validade</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316a34a'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/app.js"></script>
+  </head>
+  <body>
+    <!-- Telas públicas: login, esqueci a senha, criar senha pelo convite -->
+    <div id="public-screen" class="auth" hidden>
+      <aside class="auth-hero" aria-hidden="true">
+        <div class="auth-hero-inner">
+          <div class="brand brand-light"><span class="brand-mark"></span>Controle de Validade</div>
+          <h2>Venda antes de vencer.</h2>
+          <p>Saiba o que vence nos próximos dias, faça promoção a tempo e acompanhe quanto o mercadinho deixou de perder.</p>
+          <ul class="auth-points">
+            <li>Alertas de 5, 7, 10, 15 e 30 dias</li>
+            <li>Foto do produto e da etiqueta de validade</li>
+            <li>Relatório mensal de perdas</li>
+          </ul>
+        </div>
+      </aside>
+      <main id="public-view" class="auth-main"></main>
+    </div>
+
+    <!-- Sistema -->
+    <div id="app-shell" class="shell" hidden>
+      <aside id="sidebar" class="sidebar" aria-label="Menu">
+        <a class="brand brand-light" href="#/painel"><span class="brand-mark" aria-hidden="true"></span>Controle de Validade</a>
+        <nav id="nav" class="nav"></nav>
+        <div class="sidebar-footer">
+          <a href="#/conta" class="user-chip" id="user-chip"></a>
+          <button id="logout" class="nav-link" type="button"></button>
+        </div>
+      </aside>
+      <div id="backdrop" class="backdrop" hidden></div>
+
+      <div class="content">
+        <header class="mobile-bar">
+          <button id="menu-toggle" class="icon-btn" type="button" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false"></button>
+          <span class="brand"><span class="brand-mark" aria-hidden="true"></span>Validade</span>
+        </header>
+        <main id="view" class="page" tabindex="-1"></main>
+      </div>
+    </div>
+
+    <dialog id="modal" class="modal"></dialog>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+  </body>
+</html>

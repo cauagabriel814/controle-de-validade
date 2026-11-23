@@ -1,0 +1,109 @@
+# Controle de Validade: sistema completo
+#
+#   docker compose up -d --build
+#
+#   Sistema ........ http://localhost:8080   (FRONT_PORT)
+#   E-mails (dev) .. http://localhost:8025   (MAILPIT_PORT: mostra os e-mails enviados)
+#   MinIO console .. http://localhost:9001   (MINIO_CONSOLE_PORT)
+#
+# Porta ocupada por outro projeto? Troque as portas no .env.
+#
+# Os valores vêm do arquivo .env (modelo em .env.example).
+
+name: controle-validade
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-validade}
+      POSTGRES_USER: ${POSTGRES_USER:-validade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      # Só na máquina local (para o `npm run dev` e ferramentas como DBeaver)
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-validade}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no .env}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Servidor de e-mail de mentira para desenvolvimento: captura tudo e mostra em http://localhost:8025.
+  # Em produção, aponte SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS no .env para um SMTP real.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      DATABASE_URL: postgres://${POSTGRES_USER:-validade}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-validade}
+      STORAGE_DRIVER: minio
+      S3_ENDPOINT: minio
+      S3_PORT: 9000
+      S3_USE_SSL: "false"
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-validade}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-fotos}
+      MAIL_DRIVER: smtp
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      # Quem serve as telas é o nginx (serviço front)
+      SERVE_STATIC: "false"
+      # Atrás do nginx: usa o IP real no rate limit e detecta HTTPS
+      TRUST_PROXY: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    expose:
+      - "3000"
+
+  front:
+    build:
+      context: .
+      dockerfile: docker/front.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${FRONT_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  minio-data:

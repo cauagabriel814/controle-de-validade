@@ -1,0 +1,5 @@
+# Mantém LF no repositório (Docker/Linux), independente do sistema de quem clonar
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
